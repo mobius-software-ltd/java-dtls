@@ -20,6 +20,7 @@ package com.mobius.software.iot.dal.crypto;
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.KeyStore;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.AlertLevel;
+import org.bouncycastle.crypto.tls.Certificate;
 import org.bouncycastle.crypto.tls.TlsFatalAlert;
 
 import io.netty.buffer.ByteBuf;
@@ -50,6 +52,15 @@ public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPack
 		this.keystorePassword=keystorePassword;
 		this.channels=channels;
 		this.handler=handler;
+	}
+	
+	public Certificate getCertificate(InetSocketAddress address)
+	{
+		AsyncDtlsServerProtocol server=map.getExistingDtlsServerProtocol(address);
+		if(server!=null)
+			return server.getClientCertificate();
+		
+		return null;		
 	}
 	
 	@Override
