@@ -79,7 +79,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 	private Channel channel;
 	private InetSocketAddress remoteAddress;
 	
-	public AsyncDtlsClientProtocol(AsyncDtlsClient client,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,DtlsStateHandler handler,InetSocketAddress address) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
+	public AsyncDtlsClientProtocol(AsyncDtlsClient client,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,DtlsStateHandler handler,InetSocketAddress address,boolean useExtendedMasterSecret) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
 	{
 		this.parentHandler=parentHandler;
 		this.handler=handler;
@@ -94,6 +94,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         clientState.setClient(client);
         clientState.setClientContext(new AsyncDtlsClientContext(secureRandom, securityParameters));
 
+        securityParameters.setExtendedMasterSecret(useExtendedMasterSecret);
         securityParameters.setClientRandom(DtlsHelper.createRandomBlock(client.shouldUseGMTUnixTime(),clientState.getClientContext().getNonceRandomGenerator()));
         client.initClient(clientState.getClientContext());
 

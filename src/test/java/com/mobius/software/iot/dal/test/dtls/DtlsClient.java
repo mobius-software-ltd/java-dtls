@@ -92,7 +92,7 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 			@Override
 			protected void initChannel(NioDatagramChannel socketChannel) throws Exception
 			{
-				protocol=new AsyncDtlsClientProtocol(new AsyncDtlsClient(keystore, keystorePassword),SECURE_RANDOM, socketChannel,handshakeHandler,client, new InetSocketAddress(remoteHost, remotePort));
+				protocol=new AsyncDtlsClientProtocol(new AsyncDtlsClient(keystore, keystorePassword),SECURE_RANDOM, socketChannel,handshakeHandler,client, new InetSocketAddress(remoteHost, remotePort),true);
 				socketChannel.pipeline().addLast(new AsyncDtlsClientHandler(protocol,client));
 				socketChannel.pipeline().addLast(new DummyMessageHandler(client));
 			}
