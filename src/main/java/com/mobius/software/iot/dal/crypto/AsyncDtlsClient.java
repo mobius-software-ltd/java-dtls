@@ -88,15 +88,15 @@ public class AsyncDtlsClient extends DefaultTlsClient
             {
             	if(certificateData.getCertificate()==null)
                 	return null;
-                       
+                
             	Vector<?> sigAlgs = certificateRequest.getSupportedSignatureAlgorithms();
                 if (sigAlgs != null) 
                 {
                     for (int i = 0; i < sigAlgs.size(); ++i) 
                     {
                         SignatureAndHashAlgorithm sigAlg = (SignatureAndHashAlgorithm) sigAlgs.elementAt(i);
-                        TlsSignerCredentials signer=certificateData.getSignerCredentials(sigAlg);
-                        if(signer!=null)
+                    	TlsSignerCredentials signer=certificateData.getSignerCredentials(sigAlg);
+                    	if(signer!=null)
                         	return signer;
                     }                       
                 }

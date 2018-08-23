@@ -191,6 +191,9 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         }
 
         int totalLength = 8 + securityParameters.getClientRandom().length + session_id.length + 2*offeredCipherSuites.length + clientState.getOfferedCompressionMethods().length + DtlsHelper.calculateExtensionsLength(clientState.getClientExtensions());
+        if(cookie!=null)
+        	totalLength+=cookie.length+1;
+        
         int capacity = DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH + totalLength;
         ByteBuf data=Unpooled.buffer(capacity);
         short currSequence=sequence++;
@@ -204,14 +207,14 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         data.writeByte(session_id.length);
         data.writeBytes(session_id);
         
+        //Cookie
         if(cookie!=null)
         {
         	data.writeByte(cookie.length);
             data.writeBytes(cookie);            
         }	
-        
-        //Cookie
-        data.writeBytes(DtlsHelper.EMPTY_BYTES_WITH_LENGTH);
+        else
+        	data.writeBytes(DtlsHelper.EMPTY_BYTES_WITH_LENGTH);
         
         data.writeShort(2*offeredCipherSuites.length);
         for(int i=0;i<offeredCipherSuites.length;i++)
@@ -573,7 +576,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 				break;
 			default:
 				throw new TlsFatalAlert(AlertDescription.unexpected_message);
-		}
+		}	
 	}
 
 	@Override
@@ -659,7 +662,6 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         	}
         }
                 
-        
         if (!inOfferedCipherSuites || selectedCipherSuite == CipherSuite.TLS_NULL_WITH_NULL_NULL || CipherSuite.isSCSV(selectedCipherSuite) || !DtlsHelper.getMinimumVersion(selectedCipherSuite).isEqualOrEarlierVersionOf(clientState.getClientContext().getServerVersion().getEquivalentTLSVersion()))
             throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         
@@ -712,8 +714,9 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
                 throw new TlsFatalAlert(AlertDescription.handshake_failure);            
         }
 
-        clientState.getClient().notifySecureRenegotiation(clientState.isSecure_renegotiation());
-
+        if(clientState.isSecure_renegotiation())
+        	clientState.getClient().notifySecureRenegotiation(clientState.isSecure_renegotiation());
+        
         Hashtable<Integer,byte[]> sessionClientExtensions = clientState.getClientExtensions();
         Hashtable<Integer,byte[]> sessionServerExtensions = clientState.getServerExtensions();
         if (clientState.isResumedSession())

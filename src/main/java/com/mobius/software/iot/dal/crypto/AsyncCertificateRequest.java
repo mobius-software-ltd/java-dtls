@@ -150,7 +150,7 @@ public class AsyncCertificateRequest extends CertificateRequest
 			 if (null != asn1.readObject())
 		            throw new TlsFatalAlert(AlertDescription.decode_error);
 		        
-			 certificateAuthorities.addElement(X500Name.getInstance(asn1));
+			 certificateAuthorities.addElement(X500Name.getInstance(result));
 			 remainingBytes-=2+derEncoding.length;
 		 }
 

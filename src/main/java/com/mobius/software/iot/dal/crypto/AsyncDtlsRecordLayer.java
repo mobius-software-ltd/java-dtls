@@ -147,9 +147,8 @@ public class AsyncDtlsRecordLayer
 	    	int epoch = record.readUnsignedShort();
 	        long seq = DtlsHelper.readUint48(record);
 	        //just reading length,not using it
-	        record.readShort();
-	        
-	        byte[] realData=new byte[record.readableBytes()];
+	        short packetLength=record.readShort();
+	        byte[] realData=new byte[packetLength];
 	        record.readBytes(realData);
 	        
 	        AsyncDtlsEpoch recordEpoch = null;
