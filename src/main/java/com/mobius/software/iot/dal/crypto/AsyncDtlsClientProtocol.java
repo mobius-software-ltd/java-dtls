@@ -51,7 +51,6 @@ import org.bouncycastle.crypto.tls.HashAlgorithm;
 import org.bouncycastle.crypto.tls.MaxFragmentLength;
 import org.bouncycastle.crypto.tls.NewSessionTicket;
 import org.bouncycastle.crypto.tls.ProtocolVersion;
-import org.bouncycastle.crypto.tls.SecurityParameters;
 import org.bouncycastle.crypto.tls.SessionParameters;
 import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
 import org.bouncycastle.crypto.tls.SupplementalDataEntry;
@@ -127,7 +126,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 	@SuppressWarnings("unchecked")
 	public void initHandshake(byte[] cookie) throws IOException
 	{
-		SecurityParameters securityParameters = clientState.getClientContext().getSecurityParameters();
+		AsyncDtlsSecurityParameters securityParameters = clientState.getClientContext().getSecurityParameters();
         
 		ProtocolVersion client_version = clientState.getClient().getClientVersion();
         if (!client_version.isDTLS())
@@ -143,7 +142,14 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 
         // Integer -> byte[]
         clientState.setClientExtensions(clientState.getClient().getClientExtensions());
-        
+        if(securityParameters.isExtendedMasterSecret())
+        {
+            if(clientState.getClientExtensions()==null)
+            	clientState.setClientExtensions(new Hashtable<Integer,byte[]>());
+            
+            clientState.getClientExtensions().put(DtlsHelper.EXT_extended_master_secret, DtlsHelper.EMPTY_BYTES);            
+        }
+                
         byte[] renegExtData = clientState.getClientExtensions().get(DtlsHelper.EXT_RenegotiationInfo);
         boolean noRenegExt = (null == renegExtData);
         boolean noRenegSCSV = true;
