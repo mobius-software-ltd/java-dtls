@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bouncycastle.crypto.tls.Certificate;
+import org.bouncycastle.crypto.tls.ProtocolVersion;
 
 import com.mobius.software.iot.dal.crypto.AsyncDtlsClient;
 import com.mobius.software.iot.dal.crypto.AsyncDtlsClientHandler;
@@ -92,7 +93,7 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 			@Override
 			protected void initChannel(NioDatagramChannel socketChannel) throws Exception
 			{
-				protocol=new AsyncDtlsClientProtocol(new AsyncDtlsClient(keystore, keystorePassword),SECURE_RANDOM, socketChannel,handshakeHandler,client, new InetSocketAddress(remoteHost, remotePort),true);
+				protocol=new AsyncDtlsClientProtocol(new AsyncDtlsClient(keystore, keystorePassword),SECURE_RANDOM, socketChannel,handshakeHandler,client, new InetSocketAddress(remoteHost, remotePort),true,ProtocolVersion.DTLSv12);
 				socketChannel.pipeline().addLast(new AsyncDtlsClientHandler(protocol,client));
 				socketChannel.pipeline().addLast(new DummyMessageHandler(client));
 			}

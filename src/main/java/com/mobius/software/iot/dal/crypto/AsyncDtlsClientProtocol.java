@@ -77,14 +77,16 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 	
 	private Channel channel;
 	private InetSocketAddress remoteAddress;
+	private ProtocolVersion protocolVersion;
 	
-	public AsyncDtlsClientProtocol(AsyncDtlsClient client,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,DtlsStateHandler handler,InetSocketAddress address,boolean useExtendedMasterSecret) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
+	public AsyncDtlsClientProtocol(AsyncDtlsClient client,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,DtlsStateHandler handler,InetSocketAddress address,boolean useExtendedMasterSecret,ProtocolVersion initialVersion) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
 	{
 		this.parentHandler=parentHandler;
 		this.handler=handler;
 	
 		this.channel=channel;
 		this.remoteAddress=address;
+		this.protocolVersion=initialVersion;
 		
 		AsyncDtlsSecurityParameters securityParameters = new AsyncDtlsSecurityParameters();
         securityParameters.setEntity(ConnectionEnd.client);
@@ -235,7 +237,11 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         if (clientState.getClientExtensions() != null)
         	DtlsHelper.writeExtensions(data, clientState.getClientExtensions());
         
-        recordLayer.setWriteVersion(ProtocolVersion.DTLSv10);
+        if(protocolVersion==null)
+        	recordLayer.setWriteVersion(ProtocolVersion.DTLSv10);
+        else
+        	recordLayer.setWriteVersion(protocolVersion);
+        
         recordLayer.send(currSequence, MessageType.CLIENT_HELLO, data);
         handshakeState=State.CLIENT_HELLO_SENT;
         

@@ -29,6 +29,7 @@ import java.security.cert.CertificateEncodingException;
 import java.util.Vector;
 
 import org.bouncycastle.crypto.tls.CertificateRequest;
+import org.bouncycastle.crypto.tls.CipherSuite;
 import org.bouncycastle.crypto.tls.DefaultTlsClient;
 import org.bouncycastle.crypto.tls.ProtocolVersion;
 import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
@@ -71,6 +72,32 @@ public class AsyncDtlsClient extends DefaultTlsClient
     public org.bouncycastle.asn1.x509.Certificate[] getServerCertificates()
     {
     	return this.serverCertificates;
+    }
+    
+    @Override
+    public int[] getCipherSuites()
+    {
+        return new int[]
+        {
+        	CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+        	CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
+        };
     }
     
 	@Override
