@@ -198,10 +198,19 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
             if (session_id == null || session_id.length > 32)
                 session_id = DtlsHelper.EMPTY_BYTES;            
         }
-
-        int totalLength = 8 + securityParameters.getClientRandom().length + session_id.length + 2*offeredCipherSuites.length + clientState.getOfferedCompressionMethods().length + DtlsHelper.calculateExtensionsLength(clientState.getClientExtensions());
+        
+        int totalLength = 2; 
+        totalLength += securityParameters.getClientRandom().length;
+        totalLength += 1 + session_id.length;
+        
         if(cookie!=null)
         	totalLength+=cookie.length+1;
+        else
+        	totalLength+=1;
+        
+        totalLength += 2 + 2*offeredCipherSuites.length; 
+        totalLength += 1 + clientState.getOfferedCompressionMethods().length; 
+        totalLength += DtlsHelper.calculateExtensionsLength(clientState.getClientExtensions());
         
         int capacity = DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH + totalLength;
         ByteBuf data=Unpooled.buffer(capacity);
