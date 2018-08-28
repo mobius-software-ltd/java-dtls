@@ -85,7 +85,7 @@ public class AsyncCertificateRequest extends CertificateRequest
         }
 		
 		ByteBuf buffer=Unpooled.buffer(length);
-		DtlsHelper.writeHandshakeHeader(sequence,MessageType.CERTIFICATE_REQUEST,buffer,length);
+		DtlsHelper.writeHandshakeHeader(sequence,MessageType.CERTIFICATE_REQUEST,buffer,length-DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH);
     	
 		if (certificateTypes == null || certificateTypes.length == 0)
         	buffer.writeByte(0);

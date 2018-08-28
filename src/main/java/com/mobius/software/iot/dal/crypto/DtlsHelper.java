@@ -923,9 +923,11 @@ public class DtlsHelper
 			totalLength += derEncoding.length + 3;
 		}
 
-		ByteBuf output=Unpooled.buffer(totalLength+3);
-		DtlsHelper.writeHandshakeHeader(messageSequence,MessageType.CERTIFICATE,output,totalLength);
+		totalLength+=3;
+		ByteBuf output=Unpooled.buffer(totalLength);
 		totalLength-=HANDSHAKE_MESSAGE_HEADER_LENGTH;
+		DtlsHelper.writeHandshakeHeader(messageSequence,MessageType.CERTIFICATE,output,totalLength);
+		totalLength-=3;
 		output.writeByte((byte)(totalLength >>> 16));
         output.writeByte((byte)(totalLength >>> 8));
         output.writeByte((byte)totalLength);
