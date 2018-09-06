@@ -42,6 +42,8 @@ public class AsyncDtlsSecurityParameters extends SecurityParameters
 	boolean encryptThenMAC = false;
 	boolean extendedMasterSecret = false;
 	    
+	byte[] cookie=null;
+	
 	public int getEntity() 
 	{
 		return entity;
@@ -94,12 +96,12 @@ public class AsyncDtlsSecurityParameters extends SecurityParameters
 	
     public byte[] getMasterSecret() 
     {
-		return masterSecret;
+    	return masterSecret;
 	}
 	
     public void setMasterSecret(byte[] masterSecret) 
     {
-		this.masterSecret = masterSecret;
+    	this.masterSecret = masterSecret;
 	}
 	
     public byte[] getClientRandom() 
@@ -190,5 +192,13 @@ public class AsyncDtlsSecurityParameters extends SecurityParameters
     public void setExtendedMasterSecret(boolean extendedMasterSecret) 
     {
     	this.extendedMasterSecret = extendedMasterSecret;
-	}            
+	}
+
+	public byte[] getCookie() {
+		return cookie;
+	}
+
+	public void setCookie(byte[] cookie) {
+		this.cookie = cookie;
+	}        
 }

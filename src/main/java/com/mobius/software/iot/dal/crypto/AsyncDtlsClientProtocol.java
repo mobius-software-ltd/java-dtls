@@ -302,7 +302,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         recordLayer.send(currSequence,MessageType.CLIENT_KEY_EXCHANGE, keyExchangeOutput);
         
         TlsHandshakeHash prepareFinishHash = clientState.getHandshakeHash();
-        clientState.setHandshakeHash(clientState.getHandshakeHash().stopTracking());
+        //clientState.setHandshakeHash(clientState.getHandshakeHash().stopTracking());
         
 		clientState.getClientContext().getSecurityParameters().setSessionHash(DtlsHelper.getCurrentPRFHash(clientState.getClientContext(), prepareFinishHash, null));
         
@@ -341,11 +341,14 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         }
 
         byte[] clientVerifyData = DtlsHelper.calculateVerifyData(clientState.getClientContext(), ExporterLabel.client_finished, DtlsHelper.getCurrentPRFHash(clientState.getClientContext(), clientState.getHandshakeHash(), null));
+        
         ByteBuf serverVerifyBuffer=Unpooled.buffer(DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH + clientVerifyData.length);
         currSequence=sequence++;
         DtlsHelper.writeHandshakeHeader(currSequence,MessageType.FINISHED,serverVerifyBuffer,clientVerifyData.length);
         serverVerifyBuffer.writeBytes(clientVerifyData);
         recordLayer.send(currSequence,MessageType.FINISHED, serverVerifyBuffer);
+        
+        clientVerifyData = DtlsHelper.calculateVerifyData(clientState.getClientContext(), ExporterLabel.client_finished, DtlsHelper.getCurrentPRFHash(clientState.getClientContext(), clientState.getHandshakeHash(), null));        
 	}
 	
 	public void postProcessFinished() throws IOException
@@ -387,6 +390,12 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         }
         
         clientState.getClient().notifyHandshakeComplete(); 
+	}
+	
+	public void postProcessHelloVerifyRequest() throws IOException
+	{
+		 clientState.getHandshakeHash().reset();
+         initHandshake(clientState.getClientContext().getSecurityParameters().getCookie());  
 	}
 	
 	@Override
@@ -610,6 +619,9 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 		
 		switch(messageType)
 		{
+			case HELLO_VERIFY_REQUEST:
+				postProcessHelloVerifyRequest();
+				break;
 			case SERVER_HELLO_DONE:
 				postProcessServerHelloDone();
 				handshakeState=State.FINISH_SENT;
@@ -640,10 +652,9 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
              throw new TlsFatalAlert(AlertDescription.illegal_parameter);
          
          if (!ProtocolVersion.DTLSv12.isEqualOrEarlierVersionOf(server_version) && cookie.length > 32)
-             throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+             throw new TlsFatalAlert(AlertDescription.illegal_parameter); 
          
-         clientState.getHandshakeHash().reset();
-         initHandshake(cookie);         
+         clientState.getClientContext().getSecurityParameters().setCookie(cookie);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -873,11 +884,11 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         if(body.readableBytes()!=expectedClientVerifyData.length)
 			throw new TlsFatalAlert(AlertDescription.handshake_failure);
 		
-		byte[] serverVerifyData=new byte[body.readableBytes()];
+        byte[] serverVerifyData=new byte[body.readableBytes()];
 		body.readBytes(serverVerifyData);
 		
 		if(!Arrays.equals(serverVerifyData, expectedClientVerifyData))
-			throw new TlsFatalAlert(AlertDescription.handshake_failure);					               
+			throw new TlsFatalAlert(AlertDescription.handshake_failure);		
 	}
 	
 	private void reportServerVersion(ProtocolVersion server_version) throws IOException

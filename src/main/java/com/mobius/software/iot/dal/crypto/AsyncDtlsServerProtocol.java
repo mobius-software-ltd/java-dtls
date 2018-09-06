@@ -235,6 +235,25 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
         securityParameters.setVerifyDataLength(12);
 
         Integer totalLength=6+securityParameters.getServerRandom().length+DtlsHelper.calculateExtensionsLength(serverState.getServerExtensions());
+        ProtocolVersion recordLayerVersion = serverState.getTlsServerContext().getServerVersion();
+        recordLayer.setReadVersion(recordLayerVersion);
+        recordLayer.setWriteVersion(recordLayerVersion);
+        
+        if(handshakeState!=State.CLIENT_HELLO_RECEIVED)
+        {
+        	int capacity = DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH + 35;
+	        ByteBuf data=Unpooled.buffer(capacity);
+	        short currSequence=sequence++;
+	        DtlsHelper.writeHandshakeHeader(currSequence,MessageType.HELLO_VERIFY_REQUEST,data,35);
+	        data.writeByte(recordLayerVersion.getMajorVersion());
+	        data.writeByte(recordLayerVersion.getMinorVersion());
+	        data.writeByte(serverState.getSecurityParameters().getCookie().length);
+	        data.writeBytes(serverState.getSecurityParameters().getCookie());
+	        recordLayer.send(currSequence,MessageType.HELLO_VERIFY_REQUEST, data);
+	        serverState.getHandshakeHash().reset();
+        	return;
+        }
+        
         ByteBuf output=Unpooled.buffer(DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH + totalLength);
         short currSequence=sequence++;
         DtlsHelper.writeHandshakeHeader(currSequence,MessageType.SERVER_HELLO,output,totalLength);
@@ -258,9 +277,6 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
             serverState.setPlainTextLimit(plainTextLimit);
         }
         
-        ProtocolVersion recordLayerVersion = serverState.getTlsServerContext().getServerVersion();
-        recordLayer.setReadVersion(recordLayerVersion);
-        recordLayer.setWriteVersion(recordLayerVersion);
         recordLayer.send(currSequence,MessageType.SERVER_HELLO, output);
         serverState.setHandshakeHash(serverState.getHandshakeHash().notifyPRFDetermined());
         
@@ -402,11 +418,14 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 					throw new TlsFatalAlert(AlertDescription.unexpected_message);
 				
 				//receive message
-				processClientHello(data);
-				handshakeState=State.CLIENT_HELLO_RECEIVED;
-				
-				if(handler!=null)
-					handler.handshakeStarted(remoteAddress, channel);				
+				Boolean started=processClientHello(data);
+				if(started)
+				{
+					handshakeState=State.CLIENT_HELLO_RECEIVED;
+					
+					if(handler!=null)
+						handler.handshakeStarted(remoteAddress, channel);
+				}
 		        break;
 			case SUPPLEMENTAL_DATA:
 				if(handshakeState!=State.SERVER_HELLO_DONE)
@@ -498,12 +517,15 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 		{
 			case CLIENT_HELLO:
 				postProcessClientHello();				
-				handshakeState=State.SERVER_HELLO_DONE;
-				serverState.getHandshakeHash().sealHashAlgorithms();
+				if(handshakeState==State.CLIENT_HELLO_RECEIVED)
+				{
+					handshakeState=State.SERVER_HELLO_DONE;
+					serverState.getHandshakeHash().sealHashAlgorithms();
+				}
 		        break;
 			case CLIENT_KEY_EXCHANGE:
 				serverState.setPrepareToFinishHash(serverState.getHandshakeHash());
-		        serverState.setHandshakeHash(serverState.getHandshakeHash().stopTracking());
+		        //serverState.setHandshakeHash(serverState.getHandshakeHash().stopTracking());
 		        
 		        serverState.getSecurityParameters().setSessionHash(DtlsHelper.getCurrentPRFHash(serverState.getTlsServerContext(), serverState.getPrepareToFinishHash(), null));
 		        
@@ -534,7 +556,7 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 		}
 	}
 	
-	private void processClientHello(ByteBuf body) throws IOException
+	private Boolean processClientHello(ByteBuf body) throws IOException
 	{
 	    ProtocolVersion client_version = ProtocolVersion.get(body.readByte() & 0xFF, body.readByte() & 0xFF);
 	    if (!client_version.isDTLS())
@@ -553,6 +575,24 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 	    short cookieLength=body.readUnsignedByte();
 	    byte[] cookie = new byte[cookieLength];
 	    body.readBytes(cookie);
+	    
+	    Boolean result = true;
+	    if(cookieLength==0)
+	    {
+	    	//need to send hello verify request
+	    	cookie=new byte[32];
+	    	serverState.getSecureRandom().nextBytes(cookie);
+	    	serverState.getSecurityParameters().setCookie(cookie);
+	    	result = false;
+	    }
+	    else
+	    {
+	    	if(serverState.getSecurityParameters().getCookie()==null)
+	    		throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+	    	
+	    	if(!Arrays.equals(cookie, serverState.getSecurityParameters().getCookie()))
+	    		throw new TlsFatalAlert(AlertDescription.illegal_parameter);	    	
+	    }	
 	    
 	    int cipher_suites_length = body.readUnsignedShort();
 	    if (cipher_suites_length < 2 || (cipher_suites_length & 1) != 0)
@@ -629,7 +669,9 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
                 throw new TlsFatalAlert(AlertDescription.handshake_failure);
         }
 
-        serverState.getServer().notifySecureRenegotiation(serverState.isSecure_renegotiation());
+        if(serverState.isSecure_renegotiation())
+        	serverState.getServer().notifySecureRenegotiation(serverState.isSecure_renegotiation());
+        
         if (serverState.getClientExtensions() != null)
 	    {
         	//validating padding extentions
@@ -645,6 +687,8 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
         	 
         	serverState.getServer().processClientExtensions(serverState.getClientExtensions());
 	    }
+        
+        return result;
 	}
 	
 	private void processSupplementalData(ByteBuf body) throws IOException

@@ -38,6 +38,7 @@ public class DummyMessageHandler extends SimpleChannelInboundHandler<DatagramPac
 	{
 		byte[] messageContent=new byte[msg.content().readableBytes()];
 		msg.content().readBytes(messageContent);
+		System.out.println("MESSAGE:" + new String(messageContent));
 		this.handlerInterface.messageReceived(new String(messageContent));
 	}
 }

@@ -46,7 +46,7 @@ import org.bouncycastle.crypto.tls.TlsPeer;
 public class AsyncDtlsRecordLayer 
 {
 	public static final int RECORD_HEADER_LENGTH = 13;
-	public static final int MAX_FRAGMENT_LENGTH = 1 << 11;
+	public static final int MAX_FRAGMENT_LENGTH = 1400;
 	public static final long TCP_MSL = 1000L * 60 * 2;
 	public static final long RETRANSMIT_TIMEOUT = TCP_MSL * 2;
 
@@ -237,26 +237,20 @@ public class AsyncDtlsRecordLayer
 		            		{
 		            			data.getBuffer().writerIndex(handshakeHeader.getTotalLength());
 		            			byte[] packetData=null;
-		            			if (handshakeHeader.getMessageType() != MessageType.HELLO_REQUEST)
-		            	        {
-		            				ByteBuf copy=data.getBuffer().copy();
-			            			packetData=new byte[copy.readableBytes()];
-			            			copy.readBytes(packetData);	            		
-		            	        }
+		            			ByteBuf copy=data.getBuffer().copy();
+		            			packetData=new byte[copy.readableBytes()];
+		            			copy.readBytes(packetData);	
 		            			
 		            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
 		            				handshakeHandler.handleHandshake(handshakeHeader.getMessageType(), data.getBuffer());
 		            			
-		            			if (handshakeHeader.getMessageType() != MessageType.HELLO_REQUEST)
-			            	    {
-		            				byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
-		            				ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
-		            				headerBuffer.writerIndex(0);
-		            				DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
-		            				headerBuffer.readerIndex(0);
-		            				handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
-			            			handshakeHash.update(packetData, 0, packetData.length); 
-		            	        }
+		            			byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
+	            				ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
+	            				headerBuffer.writerIndex(0);
+	            				DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
+	            				headerBuffer.readerIndex(0);
+	            				handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
+		            			handshakeHash.update(packetData, 0, packetData.length);
 		            			
 		            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
 		            				handshakeHandler.postProcessHandshake(handshakeHeader.getMessageType(), data.getBuffer());
@@ -267,27 +261,21 @@ public class AsyncDtlsRecordLayer
 		            	else
 		            	{
 		            		byte[] packetData=null;
-	            			if (handshakeHeader.getMessageType() != MessageType.HELLO_REQUEST)
-	            	        {
-		            			ByteBuf copy=output.copy();
-		            			packetData=new byte[copy.readableBytes()];
-		            			copy.readBytes(packetData);	            		
-	            	        }
+		            		ByteBuf copy=output.copy();
+	            			packetData=new byte[copy.readableBytes()];
+	            			copy.readBytes(packetData);
 	            			
 	            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
 	            				handshakeHandler.handleHandshake(handshakeHeader.getMessageType(), output);
 	            			
-	            			if (handshakeHeader.getMessageType() != MessageType.HELLO_REQUEST)
-		            	    {
-		            			byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
-		            			ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
-	            				headerBuffer.writerIndex(0);
-	            				DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
-	            				headerBuffer.readerIndex(0);
-	            				handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
-		            			handshakeHash.update(packetData, 0, packetData.length); 
-	            	        }
-		            		
+	            			byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
+	            			ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
+            				headerBuffer.writerIndex(0);
+            				DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
+            				headerBuffer.readerIndex(0);
+            				handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
+	            			handshakeHash.update(packetData, 0, packetData.length); 
+	            			
 	            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
 	            				handshakeHandler.postProcessHandshake(handshakeHeader.getMessageType(), output);	            		
 		            	}
@@ -375,7 +363,7 @@ public class AsyncDtlsRecordLayer
     	}
     	
     	handshakeHash.update(realArray, 0, DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH);
-    	handshakeHash.update(realArray, DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH, realArray.length-DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH);    	
+    	handshakeHash.update(realArray, DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH, realArray.length-DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH);        
     }
     
     public void close() throws IOException

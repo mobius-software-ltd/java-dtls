@@ -105,6 +105,8 @@ public class DtlsHelper
     public static final Integer HANDSHAKE_MESSAGE_HEADER_LENGTH = 12;
     public static final byte[][] SSL3_CONST = genSSL3Const();
 
+    private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	
     public static byte[][] genSSL3Const()
     {
         int n = 10;
@@ -1240,7 +1242,7 @@ public class DtlsHelper
 
 	    try
 	    {
-	    	securityParameters.setMasterSecret(calculateMasterSecret(securityParameters, context, pre_master_secret));
+	    	securityParameters.setMasterSecret(calculateMasterSecret(securityParameters, context, pre_master_secret));	    	
 	    }
 	    finally
 	    {
@@ -1494,5 +1496,16 @@ public class DtlsHelper
 		Integer fragmentOffset=readUint24(data);
 		Integer fragmentLength=readUint24(data);
 		return new HandshakeHeader(fragmentOffset, fragmentLength, totalLength, messageType, messageSequence);		
+	}
+	
+	public static String bytesToHex(byte[] bytes) 
+	{
+	    char[] hexChars = new char[bytes.length * 2];
+	    for ( int j = 0; j < bytes.length; j++ ) {
+	        int v = bytes[j] & 0xFF;
+	        hexChars[j * 2] = hexArray[v >>> 4];
+	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+	    }
+	    return new String(hexChars);
 	}
 }

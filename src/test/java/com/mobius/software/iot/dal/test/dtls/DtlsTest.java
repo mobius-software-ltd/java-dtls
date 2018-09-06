@@ -197,7 +197,7 @@ public class DtlsTest
 		assertEquals(new Integer(certificateList.length),count);
 		
 		//verifying that all handshake messages received
-		assertEquals(server.handshakeMessagesReceived(MessageType.CLIENT_HELLO),new Integer(1));
+		assertEquals(server.handshakeMessagesReceived(MessageType.CLIENT_HELLO),new Integer(2));
 		assertEquals(server.handshakeMessagesReceived(MessageType.CERTIFICATE),new Integer(1));
 		assertEquals(server.handshakeMessagesReceived(MessageType.CLIENT_KEY_EXCHANGE),new Integer(1));
 		assertEquals(server.handshakeMessagesReceived(MessageType.CERTIFICATE_VERIFY),new Integer(1));
@@ -236,7 +236,7 @@ public class DtlsTest
 		KeyStore clientKeystore = null;
 		logger.info("Initializing server and client");
 		
-		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword);
+		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword);		
 		server.initServer();
 		
 		try
@@ -249,6 +249,7 @@ public class DtlsTest
 		}
 		
 		DtlsClient client=new DtlsClient("127.0.0.1","127.0.0.1",5555,clientKeystore,clientKeystorePassword);
+		
 		client.establishConnection();
 		
 		logger.info("All set up,testing");
@@ -322,7 +323,7 @@ public class DtlsTest
 		assertEquals(new Integer(certificateList.length),count);
 		
 		//verifying that all handshake messages received
-		assertEquals(server.handshakeMessagesReceived(MessageType.CLIENT_HELLO),new Integer(1));
+		assertEquals(server.handshakeMessagesReceived(MessageType.CLIENT_HELLO),new Integer(2));
 		assertEquals(server.handshakeMessagesReceived(MessageType.CERTIFICATE),new Integer(1));
 		assertEquals(server.handshakeMessagesReceived(MessageType.CLIENT_KEY_EXCHANGE),new Integer(1));
 		//no certificate verification sent here
