@@ -55,6 +55,7 @@ public class AsyncDtlsClientHandler extends MessageToMessageDecoder<DatagramPack
 		}
 		catch(TlsFatalAlert ex)
 		{
+			ex.printStackTrace();
 			try
 			{
 				protocol.sendAlert(AlertLevel.fatal, ex.getAlertDescription(), ex.getMessage(),ex.getCause());

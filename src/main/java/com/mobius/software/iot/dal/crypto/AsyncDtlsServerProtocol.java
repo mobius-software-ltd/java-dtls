@@ -167,7 +167,10 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 
         if (serverState.isSecure_renegotiation())
         {        	
-            byte[] renegExtData = serverState.getServerExtensions().get(DtlsHelper.EXT_RenegotiationInfo);
+            byte[] renegExtData = null;
+            if(serverState.getServerExtensions()!=null)
+            	serverState.getServerExtensions().get(DtlsHelper.EXT_RenegotiationInfo);
+            
             boolean noRenegExt = (null == renegExtData);
 
             if (noRenegExt)

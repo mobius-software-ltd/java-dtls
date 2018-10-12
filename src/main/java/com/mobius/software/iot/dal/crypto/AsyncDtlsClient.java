@@ -46,11 +46,13 @@ public class AsyncDtlsClient extends DefaultTlsClient
 	
 	private KeyStore keystore;
 	private String keystorePassword;
+	private int[] definedCipherSuities=null;
 	
-	public AsyncDtlsClient(KeyStore keystore,String keystorePassword)
+	public AsyncDtlsClient(KeyStore keystore,String keystorePassword,int[] definedCipherSuities)
     {
 		this.keystore=keystore;
 		this.keystorePassword=keystorePassword;
+		this.definedCipherSuities=definedCipherSuities;
     }
     
 	public void initClient(TlsClientContext context) throws KeyStoreException,UnrecoverableKeyException,NoSuchAlgorithmException,CertificateEncodingException,IOException
@@ -77,6 +79,9 @@ public class AsyncDtlsClient extends DefaultTlsClient
     @Override
     public int[] getCipherSuites()
     {
+    	if(definedCipherSuities!=null)
+    		return definedCipherSuities;
+    	
         return new int[]
         {
         	CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
