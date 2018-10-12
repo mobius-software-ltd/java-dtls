@@ -37,6 +37,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
+@io.netty.channel.ChannelHandler.Sharable
 public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPacket>
 {
 	private AsyncDtlsServerContextMap map;

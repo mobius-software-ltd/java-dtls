@@ -85,12 +85,14 @@ public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 		bootstrap.option(ChannelOption.SO_RCVBUF, 65536);
 		
 		final DtlsServer server=this;
+		final AsyncDtlsServerHandler serverHandler=new AsyncDtlsServerHandler(keystore,keystorePassword,contextMap,channels,server);
+		
 		bootstrap.handler(new ChannelInitializer<NioDatagramChannel>()
 		{
 			@Override
 			protected void initChannel(NioDatagramChannel socketChannel) throws Exception
 			{
-				socketChannel.pipeline().addLast(new AsyncDtlsServerHandler(keystore,keystorePassword,contextMap,channels,server));
+				socketChannel.pipeline().addLast(serverHandler);
 				socketChannel.pipeline().addLast(new DummyMessageHandler(server));				
 			}
 		});
