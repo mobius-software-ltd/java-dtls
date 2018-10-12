@@ -1,3 +1,5 @@
 /target
 .settings
 /*.project
+/pom.xml.releaseBackup
+/release.properties

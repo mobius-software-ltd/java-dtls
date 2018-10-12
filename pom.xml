@@ -1,25 +1,26 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>dtls-async-client</artifactId>
 	<groupId>com.mobius-software.iot</groupId>
 	<version>1.0.10-SNAPSHOT</version>
 	<name>dtls-async-client</name>
-	<description>DTLS Java Async Implementation Based on Bouncy Castle</description>	
+	<description>DTLS Java Async Implementation Based on Bouncy Castle</description>
 	<packaging>jar</packaging>
-		
+
 	<parent>
 		<groupId>com.mobius-software</groupId>
 		<artifactId>mobius-public-parent</artifactId>
 		<version>1.0.5</version>
 	</parent>
-	
+
 	<scm>
 		<url>https://github.com/mobius-software-ltd/bc-dtls-async-netty</url>
 		<connection>scm:git:git://github.com:mobius-software-ltd/bc-dtls-async-netty.git</connection>
 		<developerConnection>scm:git:git@github.com:mobius-software-ltd/bc-dtls-async-netty.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>commons-logging</groupId>
@@ -50,9 +51,9 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-		    <groupId>log4j</groupId>
-		    <artifactId>log4j</artifactId>
-		    <version>1.2.17</version>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -84,8 +85,18 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.0</version>				
-			</plugin>			
+				<version>3.0.0</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -97,47 +108,78 @@
 			</plugin>
 		</plugins>
 	</reporting>
-	
+
 	<profiles>
 		<profile>
-        <id>src</id>
-	        <build>
-	            <plugins>
-	                <plugin>
-	                    <groupId>org.apache.maven.plugins</groupId>
-	                    <artifactId>maven-source-plugin</artifactId>
-	                    <version>2.1.2</version>
-	                    <executions>
-	                        <execution>
-	                            <id>attach-sources</id>
-	                            <goals>
-	                                <goal>jar-no-fork</goal>
-	                            </goals>
-	                        </execution>
-	                    </executions>
-	                </plugin>
-	            </plugins>
-	        </build>
-    	</profile>
+			<id>src</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>2.1.2</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 		<profile>
-	      <id>docs</id>
-	      <build>
-	        <plugins>
-	          <plugin>
-	            <groupId>org.apache.maven.plugins</groupId>
-	            <artifactId>maven-javadoc-plugin</artifactId>
-	            <executions>
-	              <execution>
-	                <id>attach-javadocs</id>
-	                <goals>
-	                  <goal>jar</goal>
-	                </goals>
-	              </execution>
-	            </executions>
-	          </plugin>
-	        </plugins>
-	      </build>
-	    </profile>
+			<id>docs</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>no-gpg</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>2.1.2</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>1.6</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>none</phase>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
-	
+
 </project>
