@@ -54,7 +54,7 @@ public class CertificateData
 	private TlsEncryptionCredentials encryptionCredentials;
 	private TlsContext tlsContext;
 	
-	public CertificateData(KeyStore keystore,String keystorePassword,TlsContext tlsContext,Boolean isClient) throws KeyStoreException,UnrecoverableKeyException,NoSuchAlgorithmException,CertificateEncodingException,IOException
+	public CertificateData(KeyStore keystore,String keystorePassword,TlsContext tlsContext,Boolean isClient,String certificateAlias) throws KeyStoreException,UnrecoverableKeyException,NoSuchAlgorithmException,CertificateEncodingException,IOException
 	{
 		this.tlsContext=tlsContext;
 		List<X509Certificate> allCertificates=new ArrayList<X509Certificate>();
@@ -66,7 +66,9 @@ public class CertificateData
 			{
 				String alias=aliasesEnum.nextElement();
 				X509Certificate currCertificate = (X509Certificate) keystore.getCertificate(alias);
-				PrivateKey currKey=(PrivateKey) keystore.getKey(alias, keystorePassword.toCharArray());				
+				PrivateKey currKey=null;
+				if(certificateAlias==null || certificateAlias.equals(alias))
+					currKey=(PrivateKey) keystore.getKey(alias, keystorePassword.toCharArray());				
 				
 				if(currKey!=null)
 				{
@@ -76,7 +78,12 @@ public class CertificateData
 				}
 				
 				if(currCertificate!=null)
-					allCertificates.add(currCertificate);
+				{
+					if(currKey!=null)
+						allCertificates.add(0, currCertificate);
+					else
+						allCertificates.add(currCertificate);
+				}
 			}
 		}
 		

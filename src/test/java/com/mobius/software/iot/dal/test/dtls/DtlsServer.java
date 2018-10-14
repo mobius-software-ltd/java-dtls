@@ -59,7 +59,7 @@ public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 	private int port;
 	
 	private TestHandshakeHandler handshakeHandler=new TestHandshakeHandler();
-	private AsyncDtlsServerContextMap contextMap=new AsyncDtlsServerContextMap(handshakeHandler,this);
+	private AsyncDtlsServerContextMap contextMap;
 	
 	private AtomicInteger messagesCount=new AtomicInteger(0);
 	private ArrayList<String> messages=new ArrayList<String>();
@@ -67,12 +67,13 @@ public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 	private KeyStore keystore;
 	private String keystorePassword;
 	
-	public DtlsServer(String host,int port,KeyStore keystore,String keystorePassword)
+	public DtlsServer(String host,int port,KeyStore keystore,String keystorePassword,String alias)
 	{
 		this.keystore=keystore;
 		this.keystorePassword=keystorePassword;
 		this.host=host;
 		this.port=port;		
+		contextMap=new AsyncDtlsServerContextMap(handshakeHandler,this,alias);
 	}
 	
 	public void initServer()

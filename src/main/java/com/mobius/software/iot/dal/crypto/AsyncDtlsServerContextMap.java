@@ -40,11 +40,19 @@ public class AsyncDtlsServerContextMap
 
 	private HandshakeHandler parentHandler;
 	private DtlsStateHandler handler;
+	private String alias=null;
 	
 	public AsyncDtlsServerContextMap(HandshakeHandler parentHandler,DtlsStateHandler handler)
 	{
 		this.parentHandler=parentHandler;
 		this.handler=handler;
+	}
+	
+	public AsyncDtlsServerContextMap(HandshakeHandler parentHandler,DtlsStateHandler handler,String alias)
+	{
+		this.parentHandler=parentHandler;
+		this.handler=handler;
+		this.alias=alias;
 	}
 	
 	public AsyncDtlsServerProtocol getExistingDtlsServerProtocol(InetSocketAddress address)
@@ -57,7 +65,7 @@ public class AsyncDtlsServerContextMap
 		AsyncDtlsServerProtocol server=contextMap.get(address);
 		if(server==null)
 		{			
-			server=new AsyncDtlsServerProtocol(new AsyncDtlsServer(keystore, keystorePassword),SECURE_RANDOM, channel, parentHandler,address,handler);			
+			server=new AsyncDtlsServerProtocol(new AsyncDtlsServer(keystore, keystorePassword, alias),SECURE_RANDOM, channel, parentHandler,address,handler);			
 			AsyncDtlsServerProtocol oldServer=contextMap.putIfAbsent(address, server);
 			if(oldServer!=null)
 				server=oldServer;

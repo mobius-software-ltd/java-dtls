@@ -49,6 +49,7 @@ public class DtlsTest
 	private final static Logger logger = Logger.getLogger(DtlsTest.class);
     
 	private static final String keystorePassword="GfUNokaofNh6";
+	private static final String keystorePassword2="111111";
 	private static final String clientKeystorePassword="qwe321";
 	private static final String clientKeystorePassword2="111111";
 		
@@ -90,7 +91,7 @@ public class DtlsTest
 		
 		logger.info("Initializing server and client");
 		
-		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword);
+		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword,null);
 		server.initServer();
 		
 		try
@@ -237,7 +238,7 @@ public class DtlsTest
 		KeyStore clientKeystore = null;
 		logger.info("Initializing server and client");
 		
-		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword);		
+		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword,null);		
 		server.initServer();
 		
 		try
@@ -345,6 +346,13 @@ public class DtlsTest
 		assertEquals(client.getMessage(0),"server hello message 2");
 	}
 	
+	/**
+	 * @throws KeyStoreException
+	 * @throws UnrecoverableKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws CertificateEncodingException
+	 * @throws IOException
+	 */
 	@Test
 	public void testDtls2() throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateEncodingException, IOException
 	{
@@ -352,7 +360,7 @@ public class DtlsTest
 		try
 		{
 			testKeystore=KeyStore.getInstance("JKS");
-			testKeystore.load(this.getClass().getClassLoader().getResourceAsStream("dtls-demo.jks"), keystorePassword.toCharArray());
+			testKeystore.load(this.getClass().getClassLoader().getResourceAsStream("server.jks"), keystorePassword2.toCharArray());
 		}		
 		catch(Exception ex)
 		{
@@ -376,7 +384,7 @@ public class DtlsTest
 		
 		logger.info("Initializing server and client");
 		
-		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword);
+		DtlsServer server=new DtlsServer("0.0.0.0", 5555,testKeystore,keystorePassword2,"server");
 		server.initServer();
 		
 		try

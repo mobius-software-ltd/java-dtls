@@ -58,7 +58,7 @@ public class AsyncDtlsClient extends DefaultTlsClient
 	public void initClient(TlsClientContext context) throws KeyStoreException,UnrecoverableKeyException,NoSuchAlgorithmException,CertificateEncodingException,IOException
 	{
 		super.init(context);
-		this.certificateData=new CertificateData(keystore, keystorePassword, context, true);
+		this.certificateData=new CertificateData(keystore, keystorePassword, context, true, null);
 	}
 	
     public ProtocolVersion getClientVersion() 

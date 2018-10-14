@@ -53,6 +53,7 @@ public class AsyncDtlsServer extends DefaultTlsServer
     
     private KeyStore keystore;
     private String keystorePassword;
+    private String alias=null;
     
     public AsyncDtlsServer(KeyStore keystore,String keystorePassword)
     {    	
@@ -60,10 +61,17 @@ public class AsyncDtlsServer extends DefaultTlsServer
     	this.keystorePassword=keystorePassword;
     }
 
+    public AsyncDtlsServer(KeyStore keystore,String keystorePassword,String alias)
+    {
+    	this.keystore=keystore;
+    	this.keystorePassword=keystorePassword;
+    	this.alias=alias;
+    }
+    
     public void initServer(TlsServerContext context) throws KeyStoreException,UnrecoverableKeyException,NoSuchAlgorithmException,CertificateEncodingException,IOException
     {
     	super.init(context);
-    	this.certificateData=new CertificateData(keystore, keystorePassword, context, false);	
+    	this.certificateData=new CertificateData(keystore, keystorePassword, context, false, alias);	
     }
     
     public void notifyAlertRaised(short alertLevel, short alertDescription, String message, Throwable cause) 
