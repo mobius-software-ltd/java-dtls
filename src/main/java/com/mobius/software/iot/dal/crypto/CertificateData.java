@@ -66,7 +66,8 @@ public class CertificateData
 			{
 				String alias=aliasesEnum.nextElement();
 				X509Certificate currCertificate = (X509Certificate) keystore.getCertificate(alias);
-				PrivateKey currKey = (PrivateKey) keystore.getKey(alias, keystorePassword.toCharArray());
+				PrivateKey currKey=(PrivateKey) keystore.getKey(alias, keystorePassword.toCharArray());				
+				
 				if(currKey!=null)
 				{
 					privateKey=currKey;
@@ -93,7 +94,9 @@ public class CertificateData
         chain=new Certificate(certificateChain);
         if(!chain.isEmpty())
         {
-        	encryptionCredentials = new DefaultTlsEncryptionCredentials(tlsContext, chain, keyParameter);
+        	if(keyParameter!=null)
+        		encryptionCredentials = new DefaultTlsEncryptionCredentials(tlsContext, chain, keyParameter);
+        	
         	try
         	{
         		agreementCredentials = new DefaultTlsAgreementCredentials(chain, keyParameter);
