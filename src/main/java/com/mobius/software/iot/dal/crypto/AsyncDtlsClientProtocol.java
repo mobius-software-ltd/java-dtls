@@ -79,13 +79,13 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 	private InetSocketAddress remoteAddress;
 	private ProtocolVersion protocolVersion;
 	
-	public AsyncDtlsClientProtocol(AsyncDtlsClient client,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,DtlsStateHandler handler,InetSocketAddress address,boolean useExtendedMasterSecret,ProtocolVersion initialVersion) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
+	public AsyncDtlsClientProtocol(AsyncDtlsClient client,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,DtlsStateHandler handler,InetSocketAddress remoteAddress,boolean useExtendedMasterSecret,ProtocolVersion initialVersion) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
 	{
 		this.parentHandler=parentHandler;
 		this.handler=handler;
 	
 		this.channel=channel;
-		this.remoteAddress=address;
+		this.remoteAddress=remoteAddress;
 		this.protocolVersion=initialVersion;
 		
 		AsyncDtlsSecurityParameters securityParameters = new AsyncDtlsSecurityParameters();
@@ -102,7 +102,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
         clientState.setHandshakeHash(new DeferredHash());       
     	clientState.getHandshakeHash().init(clientState.getClientContext());
         
-        recordLayer = new AsyncDtlsRecordLayer(clientState.getHandshakeHash(), this, channel,clientState.getClientContext(), client, address);
+        recordLayer = new AsyncDtlsRecordLayer(clientState.getHandshakeHash(), this, channel,clientState.getClientContext(), client, remoteAddress, (InetSocketAddress) channel.localAddress());
 	}
 	
 	public Certificate getServerCertificate()
@@ -901,5 +901,10 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 		}
 		else if (!currentServerVersion.equals(server_version))
 			throw new TlsFatalAlert(AlertDescription.illegal_parameter);		
+	}
+	
+	public InetSocketAddress getLocalAddress() 
+	{
+		return (InetSocketAddress) channel.localAddress();
 	}
 }
