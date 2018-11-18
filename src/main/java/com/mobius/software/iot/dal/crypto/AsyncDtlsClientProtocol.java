@@ -360,10 +360,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 			 short currSequence=sequence++;
 			 DtlsHelper.writeHandshakeHeader(currSequence,MessageType.FINISHED,serverVerifyBuffer,clientVerifyData.length);
 			 serverVerifyBuffer.writeBytes(clientVerifyData);
-			 recordLayer.send(currSequence,MessageType.FINISHED, serverVerifyBuffer);
-			 
-			 if(handler!=null)
-		        	handler.handshakeCompleted(remoteAddress, channel);
+			 recordLayer.send(currSequence,MessageType.FINISHED, serverVerifyBuffer);			 
 		}
 
 		recordLayer.handshakeSuccessful();
@@ -628,6 +625,10 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 				break;
 			case FINISHED:
 				postProcessFinished();
+				
+				handshakeState=State.ENDED;
+				if(handler!=null)
+					handler.handshakeCompleted(remoteAddress, channel);
 				break;
 			default:
 				break;
