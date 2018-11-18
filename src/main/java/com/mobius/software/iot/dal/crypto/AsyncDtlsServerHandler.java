@@ -79,7 +79,7 @@ public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPack
 				if(parsedPackets.size()>0)
 				{
 					for(ByteBuf currBuffer:parsedPackets)
-						out.add(new DatagramPacket(currBuffer, packet.recipient()));					
+						out.add(new DatagramPacket(currBuffer, packet.recipient(), packet.sender()));					
 				}
 			}
 		}

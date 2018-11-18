@@ -107,7 +107,7 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
         state.setHandshakeHash(new DeferredHash());
         state.getHandshakeHash().init(state.getTlsServerContext());
         
-        recordLayer = new AsyncDtlsRecordLayer(state.getHandshakeHash(), this, channel,state.getTlsServerContext(), server, address);
+        recordLayer = new AsyncDtlsRecordLayer(state.getHandshakeHash(), this, channel,state.getTlsServerContext(), server, address, (InetSocketAddress) channel.localAddress());
 	}
 	
 	public Certificate getClientCertificate()

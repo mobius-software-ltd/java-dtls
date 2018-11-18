@@ -86,6 +86,9 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 		clientBootstrap.channel(NioDatagramChannel.class);
 		clientBootstrap.option(ChannelOption.TCP_NODELAY, true);
 		clientBootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+		
+		final InetSocketAddress remoteAddress = new InetSocketAddress(remoteHost, remotePort);
+		final InetSocketAddress localAddress = new InetSocketAddress(host, 0);
 		final DtlsClient client=this;
 		
 		clientBootstrap.handler(new ChannelInitializer<NioDatagramChannel>()
@@ -93,7 +96,7 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 			@Override
 			protected void initChannel(NioDatagramChannel socketChannel) throws Exception
 			{
-				protocol=new AsyncDtlsClientProtocol(new AsyncDtlsClient(keystore, keystorePassword,null),SECURE_RANDOM, socketChannel,handshakeHandler,client, new InetSocketAddress(remoteHost, remotePort),true,ProtocolVersion.DTLSv12);
+				protocol=new AsyncDtlsClientProtocol(new AsyncDtlsClient(keystore, keystorePassword,null),SECURE_RANDOM, socketChannel,handshakeHandler,client, remoteAddress, true,ProtocolVersion.DTLSv12);
 				socketChannel.pipeline().addLast(new AsyncDtlsClientHandler(protocol,client));
 				socketChannel.pipeline().addLast(new DummyMessageHandler(client));
 			}
@@ -101,8 +104,8 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 
 		try
 		{
-			clientBootstrap.remoteAddress(remoteHost, remotePort);
-			clientBootstrap.localAddress(host, 0);
+			clientBootstrap.remoteAddress(remoteAddress);
+			clientBootstrap.localAddress(localAddress);
 			ChannelFuture future = clientBootstrap.connect().sync().awaitUninterruptibly();
 			channel = future.channel();
 			try

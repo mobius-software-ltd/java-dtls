@@ -68,7 +68,7 @@ public class AsyncDtlsRecordLayer
     
     private ConcurrentHashMap<Short, PendingMessageData> pendingBuffers=new ConcurrentHashMap<Short,PendingMessageData>();
     
-    public AsyncDtlsRecordLayer(TlsHandshakeHash handshakeHash,HandshakeHandler handshakeHandler,Channel channel,TlsContext context, TlsPeer peer,InetSocketAddress remoteAddress)
+    public AsyncDtlsRecordLayer(TlsHandshakeHash handshakeHash,HandshakeHandler handshakeHandler,Channel channel,TlsContext context, TlsPeer peer,InetSocketAddress remoteAddress, InetSocketAddress localAddress)
     {
     	this.handshakeHash=handshakeHash;
     	this.channel=channel;
@@ -468,7 +468,7 @@ public class AsyncDtlsRecordLayer
         
         buffer.writeShort(ciphertext.length);
         buffer.writeBytes(ciphertext);
-        channel.writeAndFlush(new DatagramPacket(buffer, remoteAddress));
+        channel.writeAndFlush(new DatagramPacket(buffer, remoteAddress, (InetSocketAddress) channel.localAddress()));
     }
 
     private static long getMacSequenceNumber(int epoch, long sequence_number)
