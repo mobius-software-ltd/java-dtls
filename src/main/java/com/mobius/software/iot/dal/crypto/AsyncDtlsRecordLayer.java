@@ -419,8 +419,6 @@ public class AsyncDtlsRecordLayer
             {
                 if (!failed)
                     warn(AlertDescription.close_notify, null);
-             
-                channel.close();
             }
             catch (Exception e)
             {

@@ -110,7 +110,6 @@ public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPack
 			
 			map.remove(packet.sender());
 			channels.remove(packet.sender(), channel);
-			channel.close();
 		}
 	}
 	
