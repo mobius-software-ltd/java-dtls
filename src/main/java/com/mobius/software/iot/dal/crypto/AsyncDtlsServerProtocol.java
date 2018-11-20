@@ -749,7 +749,10 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 		if (serverState.getCertificateRequest() == null)
             throw new IllegalStateException();
         
-		SignatureAndHashAlgorithm signatureAlgorithm=DtlsHelper.parseSignatureAndHashAlgorithm(body);
+		SignatureAndHashAlgorithm signatureAlgorithm=null;
+		if (ProtocolVersion.TLSv12.isEqualOrEarlierVersionOf(serverState.getTlsServerContext().getServerVersion().getEquivalentTLSVersion()))
+			signatureAlgorithm=DtlsHelper.parseSignatureAndHashAlgorithm(body);
+		
 		byte[] signature = new byte[body.readUnsignedShort()];
 		body.readBytes(signature);
 		
