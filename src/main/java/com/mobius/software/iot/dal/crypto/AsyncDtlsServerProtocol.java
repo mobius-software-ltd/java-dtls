@@ -617,7 +617,10 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 	    serverState.setOfferedCompressionMethods(offeredCompressionMethods);
 	    
 	    Hashtable<Integer, byte[]> extentions=new Hashtable<Integer,byte[]>();
-	    int remainingLength=body.readUnsignedShort();
+	    int remainingLength=0;
+	    if(body.readableBytes()>0)
+	    	remainingLength=body.readUnsignedShort();
+	    
 	    while(remainingLength>0)
 	    {
 	    	Integer extensionType = body.readUnsignedShort();
