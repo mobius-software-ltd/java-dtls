@@ -171,8 +171,8 @@ public class AsyncDtlsRecordLayer
 	        ByteBuf output=Unpooled.wrappedBuffer(plaintext);
 	        
 	        recordEpoch.getReplayWindow().reportAuthenticated(seq);
-	        if (plaintext.length > this.plaintextLimit)
-	        	continue;
+	        /*if (plaintext.length > this.plaintextLimit)
+	        	continue;*/
 	
 	        if (readVersion == null)
 	            readVersion = version;
