@@ -1,4 +1,4 @@
-# Nonblocking Dtls Client based on Bouncy Castle
+# Nonblocking Dtls Client and server based on Bouncy Castle
 
 This library implements nonblocking dtls client for java. It may be used with netty and without netty library 
 
