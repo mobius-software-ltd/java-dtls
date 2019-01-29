@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.AlertLevel;
@@ -68,6 +70,9 @@ public class AsyncDtlsRecordLayer
     
     private ConcurrentHashMap<Short, PendingMessageData> pendingBuffers=new ConcurrentHashMap<Short,PendingMessageData>();
     
+    private AtomicLong lastProcessedTransportSequence=new AtomicLong(Integer.MIN_VALUE);
+    private ConcurrentHashMap<Integer,ConcurrentHashMap<Long, PendingTransportData>> pendingTransportMessages=new ConcurrentHashMap<Integer,ConcurrentHashMap<Long,PendingTransportData>>();
+    
     public AsyncDtlsRecordLayer(TlsHandshakeHash handshakeHash,HandshakeHandler handshakeHandler,Channel channel,TlsContext context, TlsPeer peer,InetSocketAddress remoteAddress, InetSocketAddress localAddress)
     {
     	this.handshakeHash=handshakeHash;
@@ -78,6 +83,7 @@ public class AsyncDtlsRecordLayer
         this.inHandshake = true;
         this.currentEpoch = new AsyncDtlsEpoch(0, new TlsNullCipher(context));
         this.pendingEpoch = null;
+        this.pendingTransportMessages.put(this.currentEpoch.getEpoch(), new ConcurrentHashMap<Long, PendingTransportData>());
         this.readEpoch = currentEpoch;
         this.writeEpoch = currentEpoch;
 
@@ -137,156 +143,198 @@ public class AsyncDtlsRecordLayer
     	return this.plaintextLimit-RECORD_HEADER_LENGTH;
     }
     
+    private void processHandshakeQueue(HandshakeHeader handshakeHeader,ByteBuf buffer,byte[] packetData) throws IOException
+    {
+    	if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
+			handshakeHandler.handleHandshake(handshakeHeader.getMessageType(), buffer);
+		
+		byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
+		ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
+		headerBuffer.writerIndex(0);
+		DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
+		headerBuffer.readerIndex(0);
+		handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
+		handshakeHash.update(packetData, 0, packetData.length);
+		
+		if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
+			handshakeHandler.postProcessHandshake(handshakeHeader.getMessageType(), buffer);
+    }
+    
     public List<ByteBuf> receive(ByteBuf record) throws IOException
     {
-    	List<ByteBuf> outputList=new ArrayList<ByteBuf>();
     	while(record.readableBytes()>RECORD_HEADER_LENGTH)
     	{
     		short type = (short)(record.readByte() & 0x00FF);
 	    	ProtocolVersion version=ProtocolVersion.get(record.readByte() & 0xFF, record.readByte() & 0xFF);
 	    	int epoch = record.readUnsignedShort();
 	        long seq = DtlsHelper.readUint48(record);
+	        
 	        //just reading length,not using it
 	        short packetLength=record.readShort();
 	        byte[] realData=new byte[packetLength];
 	        record.readBytes(realData);
 	        
-	        AsyncDtlsEpoch recordEpoch = null;
-	        if (epoch == readEpoch.getEpoch())
-	            recordEpoch = readEpoch;
-
-	        if (recordEpoch == null)
-	            continue;
-	
-	        if (recordEpoch.getReplayWindow().shouldDiscard(seq))
-	        	continue;
-	
-	        if (!version.isDTLS())
-	        	continue;
-	
-	        if (readVersion != null && !readVersion.equals(version))
-	        	continue;
+	        lastProcessedTransportSequence.compareAndSet(Integer.MIN_VALUE, seq);
+	        if(pendingTransportMessages.get(epoch)==null)
+	        	pendingTransportMessages.putIfAbsent(epoch, new ConcurrentHashMap<Long, PendingTransportData>());
 	        
-	        byte[] plaintext = recordEpoch.getCipher().decodeCiphertext(getMacSequenceNumber(recordEpoch.getEpoch(), seq), type, realData, 0, realData.length);
-	        ByteBuf output=Unpooled.wrappedBuffer(plaintext);
+	        pendingTransportMessages.get(epoch).put(seq, new PendingTransportData(type, version, epoch, seq, realData));
+    	}
 	        
-	        recordEpoch.getReplayWindow().reportAuthenticated(seq);
-	        /*if (plaintext.length > this.plaintextLimit)
-	        	continue;*/
+    	List<ByteBuf> outputList=new ArrayList<ByteBuf>();
+    	Boolean shouldContinue=true;
+    	while(shouldContinue)
+    	{
+    		PendingTransportData nextPacket=pendingTransportMessages.get(readEpoch.getEpoch()).remove(lastProcessedTransportSequence.get());
+        	if(nextPacket==null)
+        		shouldContinue=false;
+        	else 
+        	{
+	    		AsyncDtlsEpoch recordEpoch = null;
+		        if (nextPacket.getEpoch() == readEpoch.getEpoch())
+		            recordEpoch = readEpoch;
 	
-	        if (readVersion == null)
-	            readVersion = version;
-	        
-	        switch (type)
-	        {
-		        case ContentType.alert:
-		            if (output.readableBytes() == 2)
-		            {
-		                short alertLevel = (short)(output.readByte() & 0x0FF);
-		                short alertDescription = (short)(output.readByte() & 0x0FF);
-		
-		                peer.notifyAlertReceived(alertLevel, alertDescription);
-		
-		                if (alertLevel == AlertLevel.fatal)
-		                {
-		                    failed();
-		                    throw new TlsFatalAlert(alertDescription);
-		                }
-		
-		                if (alertDescription == AlertDescription.close_notify)
-		                    closeTransport();	                
-		            }
-		
-		            continue;
-		        case ContentType.application_data:
-		            if (inHandshake)
-		            	continue;
-		            break;
-		        case ContentType.change_cipher_spec:
-		        	while(output.readableBytes()>0)
-		            {
-		            	
-		                short message = (short)(output.readByte() & 0x0FF);
-		                if (message != ChangeCipherSpec.change_cipher_spec)
-		                	continue;
-		            
-		                if (pendingEpoch != null)
-		                    readEpoch = pendingEpoch;	                
-		            }
-		
+		        if (recordEpoch == null)
+		        {
+		        	lastProcessedTransportSequence.incrementAndGet();
 		        	continue;
-		        case ContentType.handshake:
-		            if (!inHandshake)
-		                continue;
-		            
-		            HandshakeHeader handshakeHeader=DtlsHelper.readHandshakeHeader(output);
-		            
-		            if(handshakeHeader!=null)
-		            {
-		            	if(!handshakeHeader.getFragmentLength().equals(handshakeHeader.getTotalLength()))
-		            	{
-		            		PendingMessageData data=pendingBuffers.get(handshakeHeader.getMessageSequence());
-		            		if(data==null)
-		            		{
-		            			data=new PendingMessageData(Unpooled.buffer(handshakeHeader.getTotalLength()));
-		            			pendingBuffers.put(handshakeHeader.getMessageSequence(),data);
-		            		}
-		            			
-		            		data.writeBytes(output, handshakeHeader.getFragmentOffset());
-		            		if(data.getWrottenBytes().equals(handshakeHeader.getTotalLength()))
-		            		{
-		            			data.getBuffer().writerIndex(handshakeHeader.getTotalLength());
-		            			byte[] packetData=null;
-		            			ByteBuf copy=data.getBuffer().copy();
+		        }
+		
+		        if (recordEpoch.getReplayWindow().shouldDiscard(nextPacket.getSeq()))
+		        {
+		        	lastProcessedTransportSequence.incrementAndGet();
+		        	continue;
+		        }
+		
+		        if (!nextPacket.getVersion().isDTLS())
+		        {
+		        	lastProcessedTransportSequence.incrementAndGet();
+		        	continue;
+		        }
+		
+		        if (readVersion != null && !readVersion.equals(nextPacket.getVersion()))
+		        {
+		        	lastProcessedTransportSequence.incrementAndGet();
+		        	continue;
+		        }
+		        
+		        byte[] plaintext = recordEpoch.getCipher().decodeCiphertext(getMacSequenceNumber(recordEpoch.getEpoch(), nextPacket.getSeq()), nextPacket.getType(), nextPacket.getRealData(), 0, nextPacket.getRealData().length);
+		        ByteBuf output=Unpooled.wrappedBuffer(plaintext);
+		        
+		        recordEpoch.getReplayWindow().reportAuthenticated(nextPacket.getSeq());
+		        /*if (plaintext.length > this.plaintextLimit)
+		        	continue;*/
+		
+		        if (readVersion == null)
+		            readVersion = nextPacket.getVersion();
+		        
+		        switch (nextPacket.getType())
+		        {
+			        case ContentType.alert:
+			            if (output.readableBytes() == 2)
+			            {
+			                short alertLevel = (short)(output.readByte() & 0x0FF);
+			                short alertDescription = (short)(output.readByte() & 0x0FF);
+			
+			                peer.notifyAlertReceived(alertLevel, alertDescription);
+			
+			                if (alertLevel == AlertLevel.fatal)
+			                {
+			                    failed();
+			                    throw new TlsFatalAlert(alertDescription);
+			                }
+			
+			                if (alertDescription == AlertDescription.close_notify)
+			                    closeTransport();	                
+			            }
+			
+			            lastProcessedTransportSequence.incrementAndGet();
+			            continue;
+			        case ContentType.application_data:
+			            if (inHandshake)
+			            {
+			            	lastProcessedTransportSequence.incrementAndGet();
+			            	continue;
+			            }
+			            break;
+			        case ContentType.change_cipher_spec:
+			        	while(output.readableBytes()>0)
+			            {
+			            	
+			                short message = (short)(output.readByte() & 0x0FF);
+			                if (message != ChangeCipherSpec.change_cipher_spec)
+			                {
+			                	lastProcessedTransportSequence.incrementAndGet();
+			                	continue;
+			                }
+			            
+			                if (pendingEpoch != null)
+			                {
+			                	lastProcessedTransportSequence.set(-1);
+			                	pendingTransportMessages.putIfAbsent(this.pendingEpoch.getEpoch(), new ConcurrentHashMap<Long, PendingTransportData>());
+			                    readEpoch = pendingEpoch;
+			                }
+			            }
+			
+			        	lastProcessedTransportSequence.incrementAndGet();
+			        	continue;
+			        case ContentType.handshake:
+			            if (!inHandshake)
+			            {
+			            	lastProcessedTransportSequence.incrementAndGet();
+			                continue;
+			            }
+			                
+			            HandshakeHeader handshakeHeader=DtlsHelper.readHandshakeHeader(output);
+			            
+			            if(handshakeHeader!=null)
+			            {
+			            	if(!handshakeHeader.getFragmentLength().equals(handshakeHeader.getTotalLength()))
+			            	{
+			            		PendingMessageData data=pendingBuffers.get(handshakeHeader.getMessageSequence());
+			            		if(data==null)
+			            		{
+			            			data=new PendingMessageData(Unpooled.buffer(handshakeHeader.getTotalLength()));
+			            			PendingMessageData oldData=pendingBuffers.putIfAbsent(handshakeHeader.getMessageSequence(),data);
+			            			if(oldData!=null)
+			            				data=oldData;
+			            		}
+			            			
+			            		data.writeBytes(output, handshakeHeader.getFragmentOffset());
+			            		if(data.getWrottenBytes().equals(handshakeHeader.getTotalLength()))
+			            		{
+			            			data.getBuffer().writerIndex(handshakeHeader.getTotalLength());
+			            			byte[] packetData=null;
+			            			ByteBuf copy=data.getBuffer().copy();
+			            			packetData=new byte[copy.readableBytes()];
+			            			copy.readBytes(packetData);	
+			            			
+			            			processHandshakeQueue(handshakeHeader,data.getBuffer(),packetData);
+			            			
+			            			pendingBuffers.remove(handshakeHeader.getMessageSequence());
+			            		}
+			            	}
+			            	else
+			            	{
+			            		byte[] packetData=null;
+			            		ByteBuf copy=output.copy();
 		            			packetData=new byte[copy.readableBytes()];
-		            			copy.readBytes(packetData);	
+		            			copy.readBytes(packetData);
 		            			
-		            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
-		            				handshakeHandler.handleHandshake(handshakeHeader.getMessageType(), data.getBuffer());
-		            			
-		            			byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
-	            				ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
-	            				headerBuffer.writerIndex(0);
-	            				DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
-	            				headerBuffer.readerIndex(0);
-	            				handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
-		            			handshakeHash.update(packetData, 0, packetData.length);
-		            			
-		            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
-		            				handshakeHandler.postProcessHandshake(handshakeHeader.getMessageType(), data.getBuffer());
-		            			
-		            			pendingBuffers.remove(handshakeHeader.getMessageSequence());
-		            		}		            				            		
-		            	}
-		            	else
-		            	{
-		            		byte[] packetData=null;
-		            		ByteBuf copy=output.copy();
-	            			packetData=new byte[copy.readableBytes()];
-	            			copy.readBytes(packetData);
-	            			
-	            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
-	            				handshakeHandler.handleHandshake(handshakeHeader.getMessageType(), output);
-	            			
-	            			byte[] pseudoHeader=new byte[DtlsHelper.HANDSHAKE_MESSAGE_HEADER_LENGTH];
-	            			ByteBuf headerBuffer=Unpooled.wrappedBuffer(pseudoHeader);
-            				headerBuffer.writerIndex(0);
-            				DtlsHelper.writeHandshakeHeader(handshakeHeader.getMessageSequence(), handshakeHeader.getMessageType(), headerBuffer, handshakeHeader.getTotalLength());
-            				headerBuffer.readerIndex(0);
-            				handshakeHash.update(pseudoHeader, 0, pseudoHeader.length); 
-	            			handshakeHash.update(packetData, 0, packetData.length); 
-	            			
-	            			if(handshakeHeader.getMessageType()!=null && handshakeHandler!=null)
-	            				handshakeHandler.postProcessHandshake(handshakeHeader.getMessageType(), output);	            		
-		            	}
-		            }
-		            
-		            continue;
-		        case ContentType.heartbeat:
-		        	continue;	       
-	        }
-	        
-	        outputList.add(output);
+		            			processHandshakeQueue(handshakeHeader,output,packetData);	            				            				            	
+			            	}
+			            }
+			            
+			            lastProcessedTransportSequence.incrementAndGet();
+			            continue;
+			        case ContentType.heartbeat:
+			        	lastProcessedTransportSequence.incrementAndGet();
+			        	continue;	       
+		        }
+		        
+		        outputList.add(output);
+		        lastProcessedTransportSequence.incrementAndGet();
+    		}
     	}
     	
         return outputList;
