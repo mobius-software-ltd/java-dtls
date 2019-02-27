@@ -466,8 +466,10 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 			            serverState.getKeyExchange().skipClientCredentials();
 			        else
 			        {
-			        	if (ProtocolVersion.TLSv12.isEqualOrEarlierVersionOf(serverState.getTlsServerContext().getServerVersion().getEquivalentTLSVersion()))
-		                    throw new TlsFatalAlert(AlertDescription.unexpected_message);
+			        	// according to RFC 5246 client must send empty certificate handshake message, 
+			        	// however in practice some clients don't send this message
+			        	/*if (ProtocolVersion.TLSv12.isEqualOrEarlierVersionOf(serverState.getTlsServerContext().getServerVersion().getEquivalentTLSVersion()))
+		                   throw new TlsFatalAlert(AlertDescription.unexpected_message);*/
 
 		                if (serverState.getClientCertificate() != null)
 		                    throw new TlsFatalAlert(AlertDescription.unexpected_message);
