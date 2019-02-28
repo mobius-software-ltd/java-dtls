@@ -28,8 +28,8 @@ import io.netty.channel.socket.DatagramPacket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -168,7 +168,6 @@ public class AsyncDtlsRecordLayer
 	    	ProtocolVersion version=ProtocolVersion.get(record.readByte() & 0xFF, record.readByte() & 0xFF);
 	    	int epoch = record.readUnsignedShort();
 	        long seq = DtlsHelper.readUint48(record);
-	        
 	        //just reading length,not using it
 	        short packetLength=record.readShort();
 	        byte[] realData=new byte[packetLength];
@@ -190,7 +189,7 @@ public class AsyncDtlsRecordLayer
         		shouldContinue=false;
         	else 
         	{
-	    		AsyncDtlsEpoch recordEpoch = null;
+        		AsyncDtlsEpoch recordEpoch = null;
 		        if (nextPacket.getEpoch() == readEpoch.getEpoch())
 		            recordEpoch = readEpoch;
 	
@@ -270,8 +269,23 @@ public class AsyncDtlsRecordLayer
 			            
 			                if (pendingEpoch != null)
 			                {
+			                	ConcurrentHashMap<Long, PendingTransportData> oldData=pendingTransportMessages.putIfAbsent(this.pendingEpoch.getEpoch(), new ConcurrentHashMap<Long, PendingTransportData>());
 			                	lastProcessedTransportSequence.set(-1);
-			                	pendingTransportMessages.putIfAbsent(this.pendingEpoch.getEpoch(), new ConcurrentHashMap<Long, PendingTransportData>());
+			                	if(oldData!=null) 
+			                	{
+			                		Long currSequence=Long.MAX_VALUE;
+			                		Enumeration<Long> allKeys=oldData.keys();
+			                		while(allKeys.hasMoreElements())
+			                		{
+			                			Long curr=allKeys.nextElement();
+			                			if(curr<currSequence)
+			                				currSequence=curr;
+			                		}
+			                		
+			                		if(!currSequence.equals(Long.MAX_VALUE))
+			                			lastProcessedTransportSequence.set(currSequence-1);
+			                	}
+			                	
 			                    readEpoch = pendingEpoch;
 			                }
 			            }
