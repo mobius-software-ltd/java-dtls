@@ -120,7 +120,7 @@ public class AsyncDtlsClientProtocol implements HandshakeHandler
 		recordLayer.send(data);
 	}
 	
-	public List<ByteBuf> receivePacket(ByteBuf data) throws IOException
+	public List<ByteBuf> receivePacket(ByteBuf data) throws IOException, HandshakeStateException
 	{
 		return recordLayer.receive(data);
 	}

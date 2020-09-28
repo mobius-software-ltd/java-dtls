@@ -160,7 +160,7 @@ public class AsyncDtlsRecordLayer
 			handshakeHandler.postProcessHandshake(handshakeHeader.getMessageType(), buffer);
     }
     
-    public List<ByteBuf> receive(ByteBuf record) throws IOException
+    public List<ByteBuf> receive(ByteBuf record) throws IOException, HandshakeStateException
     {
     	while(record.readableBytes()>RECORD_HEADER_LENGTH)
     	{
@@ -172,6 +172,9 @@ public class AsyncDtlsRecordLayer
 	        short packetLength=record.readShort();
 	        byte[] realData=new byte[packetLength];
 	        record.readBytes(realData);
+	        
+	        if(epoch<currentEpoch.getEpoch() && type==ContentType.handshake)
+	        	throw new HandshakeStateException("invalid epoch for handshake");
 	        
 	        lastProcessedTransportSequence.compareAndSet(Integer.MIN_VALUE, seq);
 	        if(pendingTransportMessages.get(epoch)==null)

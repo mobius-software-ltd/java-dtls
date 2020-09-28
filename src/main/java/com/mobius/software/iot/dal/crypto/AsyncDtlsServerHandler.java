@@ -26,6 +26,7 @@ import java.security.KeyStore;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.log4j.Logger;
 import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.AlertLevel;
 import org.bouncycastle.crypto.tls.Certificate;
@@ -40,6 +41,8 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 @io.netty.channel.ChannelHandler.Sharable
 public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPacket>
 {
+	private static final Logger logger = Logger.getLogger(AsyncDtlsServerHandler.class);
+    
 	private AsyncDtlsServerContextMap map;
 	private KeyStore keystore;
 	private String keystorePassword;
@@ -71,6 +74,7 @@ public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPack
 		channels.put(packet.sender(), channel);
 		
 		AsyncDtlsServerProtocol server=map.getDtlsServerProtocol(keystore, keystorePassword, ctx.channel(),packet.sender());
+		packet.content().markReaderIndex();
 		try
 		{
 			List<ByteBuf> parsedPackets=server.receivePacket(packet.content());
@@ -81,6 +85,53 @@ public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPack
 					for(ByteBuf currBuffer:parsedPackets)
 						out.add(new DatagramPacket(currBuffer, packet.recipient(), packet.sender()));					
 				}
+			}
+		}
+		catch(HandshakeStateException ex1)
+		{
+			logger.warn("Looks like its connection retry,trying to reinit the connection");
+			packet.content().resetReaderIndex();
+			map.remove(packet.sender());
+			server=map.getDtlsServerProtocol(keystore, keystorePassword, ctx.channel(),packet.sender());
+			try
+			{
+				List<ByteBuf> parsedPackets=server.receivePacket(packet.content());
+				if(parsedPackets.size()>0)
+				{
+					if(parsedPackets.size()>0)
+					{
+						for(ByteBuf currBuffer:parsedPackets)
+							out.add(new DatagramPacket(currBuffer, packet.recipient(), packet.sender()));					
+					}
+				}
+			}
+			catch(TlsFatalAlert ex)
+			{
+				ex.printStackTrace();
+				try
+				{
+					server.sendAlert(AlertLevel.fatal, ex.getAlertDescription(), ex.getMessage(),ex.getCause());
+				}
+				catch(Exception ex11)
+				{				
+				}
+				
+				if(handler!=null)
+					handler.errorOccured(packet.sender(), channel);			
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+				try
+				{
+					server.sendAlert(AlertLevel.fatal, AlertDescription.decode_error, ex.getMessage(),ex.getCause());
+				}
+				catch(Exception ex11)
+				{
+				}
+				
+				map.remove(packet.sender());
+				channels.remove(packet.sender(), channel);
 			}
 		}
 		catch(TlsFatalAlert ex)

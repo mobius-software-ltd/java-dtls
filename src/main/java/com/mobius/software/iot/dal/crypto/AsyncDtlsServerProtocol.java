@@ -80,6 +80,8 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 	private InetSocketAddress remoteAddress;
 	private Certificate clientCertificate;
 	
+	private Long lastActivity=System.currentTimeMillis();
+	
 	public AsyncDtlsServerProtocol(AsyncDtlsServer server,SecureRandom secureRandom,Channel channel,HandshakeHandler parentHandler,InetSocketAddress address,DtlsStateHandler handler) throws UnrecoverableKeyException, CertificateEncodingException, KeyStoreException, NoSuchAlgorithmException, IOException
 	{
 		this.parentHandler=parentHandler;
@@ -108,6 +110,11 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
         state.getHandshakeHash().init(state.getTlsServerContext());
         
         recordLayer = new AsyncDtlsRecordLayer(state.getHandshakeHash(), this, channel,state.getTlsServerContext(), server, address, (InetSocketAddress) channel.localAddress());
+	}
+	
+	public Long getLastActivity()
+	{
+		return this.lastActivity;
 	}
 	
 	public Certificate getClientCertificate()
@@ -396,16 +403,19 @@ public class AsyncDtlsServerProtocol implements HandshakeHandler
 	
 	public void sendAlert(short alertLevel,short alertDescription,String message,Throwable cause) throws IOException
 	{
+		lastActivity=System.currentTimeMillis();
 		recordLayer.sendAlert(alertLevel, alertDescription, message, cause);
 	}
 	
 	public void sendPacket(ByteBuf data) throws IOException
 	{
+		lastActivity=System.currentTimeMillis();
 		recordLayer.send(data);
 	}
 	
-	public List<ByteBuf> receivePacket(ByteBuf data) throws IOException
+	public List<ByteBuf> receivePacket(ByteBuf data) throws IOException, HandshakeStateException
 	{
+		lastActivity=System.currentTimeMillis();
 		return recordLayer.receive(data);
 	}
 	

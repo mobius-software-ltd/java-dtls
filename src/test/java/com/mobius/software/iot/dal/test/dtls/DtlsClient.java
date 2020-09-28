@@ -62,6 +62,7 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 	private String host;
 	private String remoteHost;
 	private Integer remotePort;
+	private Integer localPort=0;
 	private KeyStore keystore;
 	private String keystorePassword;
 	
@@ -79,6 +80,16 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 		this.keystorePassword=keystorePassword;
 	}
 	
+	public DtlsClient(String host,String remoteHost,Integer remotePort,Integer localPort,KeyStore keystore,String keystorePassword)
+	{
+		this.host=host;
+		this.remoteHost=remoteHost;
+		this.remotePort=remotePort;
+		this.localPort=localPort;
+		this.keystore=keystore;
+		this.keystorePassword=keystorePassword;
+	}
+	
 	public boolean establishConnection()
 	{
 		clientGroup = new NioEventLoopGroup(4);
@@ -88,7 +99,7 @@ public class DtlsClient implements MessageHandlerInterface,DtlsStateHandler
 		clientBootstrap.option(ChannelOption.SO_KEEPALIVE, true);
 		
 		final InetSocketAddress remoteAddress = new InetSocketAddress(remoteHost, remotePort);
-		final InetSocketAddress localAddress = new InetSocketAddress(host, 0);
+		final InetSocketAddress localAddress = new InetSocketAddress(host, localPort);
 		final DtlsClient client=this;
 		
 		clientBootstrap.handler(new ChannelInitializer<NioDatagramChannel>()

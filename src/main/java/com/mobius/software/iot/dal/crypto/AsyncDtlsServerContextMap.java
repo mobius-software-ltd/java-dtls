@@ -31,10 +31,16 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateEncodingException;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.log4j.Logger;
 
 public class AsyncDtlsServerContextMap 
 {
+	private static final Logger logger = Logger.getLogger(AsyncDtlsServerContextMap.class);
+    
 	private ConcurrentHashMap<SocketAddress, AsyncDtlsServerProtocol> contextMap=new ConcurrentHashMap<SocketAddress,AsyncDtlsServerProtocol>();
 	private SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -77,5 +83,20 @@ public class AsyncDtlsServerContextMap
 	public AsyncDtlsServerProtocol remove(SocketAddress address)
 	{
 		return contextMap.remove(address);
+	}
+	
+	public void cleanupInactiveChannels(Long period) 
+	{
+		Long checkTime=System.currentTimeMillis()-period;
+		Iterator<Entry<SocketAddress, AsyncDtlsServerProtocol>> iterator=contextMap.entrySet().iterator();
+		while(iterator.hasNext())
+		{
+			Entry<SocketAddress, AsyncDtlsServerProtocol> currEntry=iterator.next();			
+			if(currEntry.getValue()==null || currEntry.getValue().getLastActivity()<checkTime)
+			{
+				logger.warn("Removing " + currEntry.getKey() + " Map due to inactivity timeout");
+				remove(currEntry.getKey());
+			}
+		}
 	}
 }

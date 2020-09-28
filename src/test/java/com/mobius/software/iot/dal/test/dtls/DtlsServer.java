@@ -36,6 +36,9 @@ import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
@@ -67,13 +70,21 @@ public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 	private KeyStore keystore;
 	private String keystorePassword;
 	
-	public DtlsServer(String host,int port,KeyStore keystore,String keystorePassword,String alias)
-	{
+	private ScheduledExecutorService cleanupExecutor;
+	
+	public DtlsServer(String host,int port,KeyStore keystore,String keystorePassword,String alias,Long idleTimeout)
+	{		
 		this.keystore=keystore;
 		this.keystorePassword=keystorePassword;
 		this.host=host;
 		this.port=port;		
 		contextMap=new AsyncDtlsServerContextMap(handshakeHandler,this,alias);
+		
+		if(idleTimeout!=null)
+		{
+			cleanupExecutor=Executors.newScheduledThreadPool(1);
+			cleanupExecutor.scheduleAtFixedRate(new CleanupRunnable(idleTimeout), 5000, 5000L, TimeUnit.MILLISECONDS);
+		}
 	}
 	
 	public void initServer()
@@ -127,6 +138,10 @@ public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 			channelFuture.awaitUninterruptibly();			
 		}
 		group.shutdownGracefully();
+		
+		if(cleanupExecutor!=null)
+			cleanupExecutor.shutdownNow();
+		
 		logger.debug("UDP Listener stopped");
 	}
 	
@@ -204,5 +219,21 @@ public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 	public String getMessage(Integer index) 
 	{
 		return messages.get(index);
+	}
+	
+	private class CleanupRunnable implements Runnable
+	{
+		private Long period;
+		
+		public CleanupRunnable(Long period) 
+		{
+			this.period=period;
+		}
+		
+		@Override
+		public void run() 
+		{
+			contextMap.cleanupInactiveChannels(period);			
+		}		
 	}
 }

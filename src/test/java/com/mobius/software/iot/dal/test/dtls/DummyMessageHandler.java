@@ -20,12 +20,16 @@ package com.mobius.software.iot.dal.test.dtls;
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import org.apache.log4j.Logger;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 
 public class DummyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket>
 {
+	private final static Logger logger = Logger.getLogger(DummyMessageHandler.class);
+    
 	private MessageHandlerInterface handlerInterface;
 	
 	public DummyMessageHandler(MessageHandlerInterface handlerInterface)
@@ -38,7 +42,7 @@ public class DummyMessageHandler extends SimpleChannelInboundHandler<DatagramPac
 	{
 		byte[] messageContent=new byte[msg.content().readableBytes()];
 		msg.content().readBytes(messageContent);
-		System.out.println("MESSAGE:" + new String(messageContent));
+		logger.info("Message Received:" + new String(messageContent));
 		this.handlerInterface.messageReceived(new String(messageContent));
 	}
 }
