@@ -20,6 +20,8 @@ package com.mobius.software.iot.dal.crypto;
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.bouncycastle.crypto.tls.TlsCipher;
 
 public class AsyncDtlsEpoch 
@@ -29,7 +31,7 @@ public class AsyncDtlsEpoch
     private final int epoch;
     private final TlsCipher cipher;
 
-    private long sequenceNumber = 0;
+    private AtomicLong sequenceNumber = new AtomicLong(0L);
 
     public AsyncDtlsEpoch(int epoch, TlsCipher cipher)
     {
@@ -48,7 +50,7 @@ public class AsyncDtlsEpoch
 
     public long allocateSequenceNumber()
     {
-        return sequenceNumber++;
+        return sequenceNumber.getAndIncrement();
     }
 
     public TlsCipher getCipher()
@@ -68,6 +70,6 @@ public class AsyncDtlsEpoch
 
     public long getSequenceNumber()
     {
-        return sequenceNumber;
+        return sequenceNumber.get();
     }
 }
