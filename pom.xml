@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>dtls-async-client</artifactId>
 	<groupId>com.mobius-software.iot</groupId>
-	<version>1.0.18-SNAPSHOT</version>
+	<version>1.0.19-SNAPSHOT</version>
 	<name>dtls-async-client</name>
 	<description>DTLS Java Async Implementation Based on Bouncy Castle</description>
 	<packaging>jar</packaging>
