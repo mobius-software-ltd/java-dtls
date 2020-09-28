@@ -35,11 +35,12 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AsyncDtlsServerContextMap 
 {
-	private static final Logger logger = Logger.getLogger(AsyncDtlsServerContextMap.class);
+	private static final Logger logger = LogManager.getLogger(AsyncDtlsServerContextMap.class);
     
 	private ConcurrentHashMap<SocketAddress, AsyncDtlsServerProtocol> contextMap=new ConcurrentHashMap<SocketAddress,AsyncDtlsServerProtocol>();
 	private SecureRandom SECURE_RANDOM = new SecureRandom();

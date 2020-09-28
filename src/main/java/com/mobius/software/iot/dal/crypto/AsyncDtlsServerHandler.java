@@ -26,7 +26,8 @@ import java.security.KeyStore;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.AlertLevel;
 import org.bouncycastle.crypto.tls.Certificate;
@@ -41,7 +42,7 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 @io.netty.channel.ChannelHandler.Sharable
 public class AsyncDtlsServerHandler extends MessageToMessageDecoder<DatagramPacket>
 {
-	private static final Logger logger = Logger.getLogger(AsyncDtlsServerHandler.class);
+	private static final Logger logger = LogManager.getLogger(AsyncDtlsServerHandler.class);
     
 	private AsyncDtlsServerContextMap map;
 	private KeyStore keystore;

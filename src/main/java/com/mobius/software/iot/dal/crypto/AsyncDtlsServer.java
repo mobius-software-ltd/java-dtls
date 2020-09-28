@@ -28,7 +28,8 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateEncodingException;
 import java.util.Vector;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.AlertLevel;
@@ -48,7 +49,7 @@ import org.bouncycastle.crypto.tls.TlsUtils;
 
 public class AsyncDtlsServer extends DefaultTlsServer 
 {
-    private static final Logger logger = Logger.getLogger(AsyncDtlsServer.class);
+    private static final Logger logger = LogManager.getLogger(AsyncDtlsServer.class);
     private CertificateData certificateData;
     private org.bouncycastle.crypto.tls.Certificate clientCertificate=null;
     

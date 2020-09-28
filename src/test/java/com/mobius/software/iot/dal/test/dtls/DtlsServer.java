@@ -41,7 +41,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.tls.Certificate;
 
 import com.mobius.software.iot.dal.crypto.AsyncDtlsServerContextMap;
@@ -52,7 +53,7 @@ import com.mobius.software.iot.dal.crypto.MessageType;
 
 public class DtlsServer implements MessageHandlerInterface,DtlsStateHandler
 {
-	private final static Logger logger = Logger.getLogger(DtlsServer.class);
+	private final static Logger logger = LogManager.getLogger(DtlsServer.class);
     
 	private NioEventLoopGroup group;
 	private Bootstrap bootstrap;

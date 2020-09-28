@@ -15,8 +15,11 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Enumeration;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.bouncycastle.asn1.x509.Certificate;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,13 +30,13 @@ public class PortReuseTest
 {
 	private static final String keystorePassword="GfUNokaofNh6";
 	private static final String clientKeystorePassword="qwe321";	
-	private final static Logger logger = Logger.getLogger(PortReuseTest.class);
+	private final static Logger logger = LogManager.getLogger(PortReuseTest.class);
     
 	@Before
     public void setUp() 
     {
-    	 BasicConfigurator.resetConfiguration();
-         BasicConfigurator.configure();         
+		Configurator.initialize(new DefaultConfiguration());
+	    Configurator.setRootLevel(Level.DEBUG);      
     }
 	
 	@Test

@@ -36,8 +36,11 @@ import java.util.Enumeration;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.bouncycastle.asn1.x509.Certificate;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +49,7 @@ import com.mobius.software.iot.dal.crypto.MessageType;
 
 public class LongTest 
 {
-	private final static Logger logger = Logger.getLogger(LongTest.class);
+	private final static Logger logger = LogManager.getLogger(LongTest.class);
     
 	private static final String keystorePassword="GfUNokaofNh6";
 	private static final String clientKeystorePassword="qwe321";
@@ -54,8 +57,8 @@ public class LongTest
 	@Before
     public void setUp() 
     {
-    	 BasicConfigurator.resetConfiguration();
-         BasicConfigurator.configure();         
+		Configurator.initialize(new DefaultConfiguration());
+	    Configurator.setRootLevel(Level.DEBUG);
     }
 	
 	@Test
